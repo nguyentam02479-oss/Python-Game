@@ -54,6 +54,12 @@ class CakePiece:
         # ----- Hiệu ứng lấp lánh của xu -----
         self._coin_anim_t = 0.0  # Bộ đếm hoạt ảnh xu (để tạo nhấp nháy)
 
+        # ----- Hiệu ứng chọn (selection glow) -----
+        self._select_anim_t = 0.0  # Bộ đếm hoạt ảnh vòng sáng khi chọn
+
+        # ----- Hoạt ảnh băng (shimmer) -----
+        self._ice_anim_t = 0.0    # Bộ đếm hiệu ứng lấp lánh băng
+
     # -------------------------------------------------------------------------
     # CẬP NHẬT TRẠNG THÁI
     # -------------------------------------------------------------------------
@@ -89,6 +95,16 @@ class CakePiece:
         # Cập nhật hoạt ảnh nhấp nháy xu
         if self.has_coin:
             self._coin_anim_t += dt * 3.0  # Tốc độ nhấp nháy
+
+        # Cập nhật hoạt ảnh vòng sáng khi chọn
+        if self.is_selected:
+            self._select_anim_t += dt * 4.0
+        else:
+            self._select_anim_t = 0.0
+
+        # Cập nhật hoạt ảnh lấp lánh băng
+        if self.is_frozen:
+            self._ice_anim_t += dt * 1.5
 
     def set_target(self, row: int, col: int):
         """
@@ -196,11 +212,15 @@ class CakePiece:
 
             surface.blit(temp_surf, (draw_x, draw_y))
 
+        # Vẽ vòng sáng chọn TRƯỚC khi vẽ băng (nằm dưới)
+        if self.is_selected:
+            self._draw_selection_glow(surface, draw_x, draw_y)
+
         # Vẽ icon xu (nếu có)
         if self.has_coin:
             self._draw_coin_icon(surface, draw_x, draw_y)
 
-        # Vẽ lớp băng (nếu có)
+        # Vẽ lớp băng (nếu có) - vẽ SAU piece ảnh để phủ lên trên
         if self.is_frozen:
             self._draw_ice_overlay(surface, draw_x, draw_y)
 
@@ -210,32 +230,137 @@ class CakePiece:
 
     def _draw_ice_overlay(self, surface: pygame.Surface, dx: int, dy: int):
         """
-        Vẽ lớp băng mờ - KHÔNG VẼ NỀN Ô.
+        Vẽ lớp băng dày kiểu Candy Crush - phủ đặc lên piece,
+        có vết nứt, phản chiếu sáng và hiệu ứng lấp lánh.
         """
-        # Tạo surface trong suốt
-        ice_surf = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
-        ice_surf.fill((0, 0, 0, 0))  # Nền trong suốt
+        cs = CELL_SIZE
+        ice_surf = pygame.Surface((cs, cs), pygame.SRCALPHA)
 
-        # Vẽ hiệu ứng băng (chỉ vẽ viền và hoa văn)
-        # KHÔNG vẽ nền màu xanh bao phủ cả ô
-        pygame.draw.rect(ice_surf, (150, 210, 255, 80),
-                         (4, 4, CELL_SIZE - 8, CELL_SIZE - 8), 2, border_radius=8)
+        # --- Lớp nền băng đặc (xanh lam nhạt, alpha ~190) ---
+        # Tạo hiệu ứng gradient bằng nhiều lớp hình chữ nhật bo góc
+        pygame.draw.rect(ice_surf, (180, 225, 255, 190),
+                         (0, 0, cs, cs), border_radius=6)
+        pygame.draw.rect(ice_surf, (210, 240, 255, 120),
+                         (2, 2, cs - 4, cs - 4), border_radius=5)
 
-        # Vẽ hoa văn tinh thể
-        cx, cy = CELL_SIZE // 2, CELL_SIZE // 2
-        crystal_color = (200, 230, 255, 150)
+        # --- Vết nứt (cracks) - tĩnh, như Candy Crush ---
+        crack_color = (100, 170, 220, 200)
+        cx, cy = cs // 2, cs // 2
 
-        # Vẽ các đường tinh thể
-        for angle in [0, 45, 90, 135, 180, 225, 270, 315]:
-            rad = math.radians(angle)
-            x1 = cx + int(8 * math.cos(rad))
-            y1 = cy + int(8 * math.sin(rad))
-            x2 = cx + int(25 * math.cos(rad))
-            y2 = cy + int(25 * math.sin(rad))
-            pygame.draw.line(ice_surf, crystal_color, (x1, y1), (x2, y2), 2)
+        # Vết nứt chính (đường xiên dài)
+        pygame.draw.line(ice_surf, crack_color,
+                         (cx - 12, cy - 18), (cx + 8, cy + 6), 2)
+        pygame.draw.line(ice_surf, crack_color,
+                         (cx + 8, cy + 6), (cx + 16, cy - 4), 2)
 
-        # Blit lên surface
+        # Vết nứt phụ (ngắn hơn)
+        pygame.draw.line(ice_surf, crack_color,
+                         (cx - 5, cy + 8), (cx + 6, cy + 18), 2)
+        pygame.draw.line(ice_surf, crack_color,
+                         (cx - 16, cy + 2), (cx - 8, cy + 10), 1)
+        pygame.draw.line(ice_surf, crack_color,
+                         (cx + 10, cy - 14), (cx + 18, cy - 8), 1)
+
+        # Đốm nhỏ tại điểm giao vết nứt
+        pygame.draw.circle(ice_surf, (80, 150, 210, 230), (cx + 8, cy + 6), 3)
+
+        # --- Phản chiếu sáng (highlight) - góc trên trái ---
+        highlight_surf = pygame.Surface((cs, cs), pygame.SRCALPHA)
+        # Hình elipse lớn sáng bóng
+        pygame.draw.ellipse(highlight_surf, (255, 255, 255, 90),
+                            (4, 4, cs // 2 + 4, cs // 3))
+        # Chấm sáng nhỏ
+        pygame.draw.ellipse(highlight_surf, (255, 255, 255, 160),
+                            (6, 6, cs // 4, cs // 6))
+        ice_surf.blit(highlight_surf, (0, 0))
+
+        # --- Viền băng dày (2 lớp viền) ---
+        pygame.draw.rect(ice_surf, (100, 180, 240, 220),
+                         (0, 0, cs, cs), 3, border_radius=6)
+        pygame.draw.rect(ice_surf, (200, 235, 255, 160),
+                         (2, 2, cs - 4, cs - 4), 1, border_radius=5)
+
+        # --- Hiệu ứng lấp lánh (shimmer) theo thời gian ---
+        shimmer_alpha = int(40 + 30 * math.sin(self._ice_anim_t * 2.0))
+        shimmer_surf = pygame.Surface((cs, cs), pygame.SRCALPHA)
+        shimmer_x = int((cs + 20) * ((math.sin(self._ice_anim_t * 0.7) + 1) / 2)) - 10
+        for i in range(8):
+            sx = shimmer_x + i * 2 - 4
+            if 0 <= sx < cs:
+                alpha_val = max(0, min(255, shimmer_alpha - i * 4))
+                pygame.draw.line(shimmer_surf,
+                                 (255, 255, 255, alpha_val),
+                                 (sx, 0), (sx + cs // 3, cs), 1)
+        ice_surf.blit(shimmer_surf, (0, 0))
+
+        # Blit toàn bộ lên surface game
         surface.blit(ice_surf, (dx, dy))
+
+    def _draw_selection_glow(self, surface: pygame.Surface, dx: int, dy: int):
+        """
+        Vẽ hiệu ứng vòng sáng nhấp nháy khi piece được chọn.
+        Phong cách Candy Crush: viền vàng sáng + hào quang mờ bên ngoài + scale nhẹ.
+        """
+        cs = CELL_SIZE
+        t = self._select_anim_t
+
+        # --- Nhịp đập (pulse): thay đổi alpha và độ dày theo sin ---
+        pulse = (math.sin(t) + 1) / 2  # 0.0 -> 1.0
+
+        # Hào quang ngoài (glow) - surface lớn hơn ô một chút
+        pad = 8  # Pixels mở rộng ra ngoài mỗi phía
+        glow_size = cs + pad * 2
+        glow_surf = pygame.Surface((glow_size, glow_size), pygame.SRCALPHA)
+
+        # Vẽ nhiều lớp hào quang từ ngoài vào trong (mờ dần)
+        glow_alpha_base = int(80 + 60 * pulse)
+        for i in range(5):
+            layer_pad = pad - i
+            layer_alpha = max(0, glow_alpha_base - i * 18)
+            layer_color = (255, 230, 60, layer_alpha)  # Vàng sáng
+            rect = pygame.Rect(i, i, glow_size - i * 2, glow_size - i * 2)
+            pygame.draw.rect(glow_surf, layer_color, rect, max(1, pad - i),
+                             border_radius=10 - i)
+
+        surface.blit(glow_surf, (dx - pad, dy - pad))
+
+        # --- Viền vàng chính (1-2 lớp) ---
+        border_surf = pygame.Surface((cs, cs), pygame.SRCALPHA)
+
+        # Viền ngoài vàng đậm
+        border_alpha = int(200 + 55 * pulse)
+        pygame.draw.rect(border_surf, (255, 220, 30, border_alpha),
+                         (0, 0, cs, cs), 3, border_radius=7)
+
+        # Viền trong trắng mỏng (highlight)
+        inner_alpha = int(120 + 80 * pulse)
+        pygame.draw.rect(border_surf, (255, 255, 200, inner_alpha),
+                         (3, 3, cs - 6, cs - 6), 1, border_radius=5)
+
+        surface.blit(border_surf, (dx, dy))
+
+        # --- 4 góc sáng (corner sparks) ---
+        spark_alpha = int(180 + 75 * pulse)
+        spark_color = (255, 245, 100, spark_alpha)
+        spark_size = int(4 + 2 * pulse)
+
+        corners = [
+            (dx + 2, dy + 2),
+            (dx + cs - 6, dy + 2),
+            (dx + 2, dy + cs - 6),
+            (dx + cs - 6, dy + cs - 6),
+        ]
+        # Vẽ sparks lên SRCALPHA surface riêng để hỗ trợ alpha
+        spark_surf = pygame.Surface((cs + pad * 2 + 10, cs + pad * 2 + 10), pygame.SRCALPHA)
+        off = pad + 5  # offset để tọa độ góc khớp với surface nhỏ
+        for (sx, sy) in corners:
+            lx = sx - dx + off - pad
+            ly = sy - dy + off - pad
+            pygame.draw.line(spark_surf, spark_color,
+                             (lx + spark_size, ly), (lx - spark_size + 4, ly), 2)
+            pygame.draw.line(spark_surf, spark_color,
+                             (lx + 2, ly - spark_size + 2), (lx + 2, ly + spark_size), 2)
+        surface.blit(spark_surf, (dx - off + pad, dy - off + pad))
 
     def _draw_coin_icon(self, surface: pygame.Surface, dx: int, dy: int):
         """
@@ -248,10 +373,14 @@ class CakePiece:
         cx = dx + CELL_SIZE - 16
         cy = dy + CELL_SIZE - 16
 
-        # Vẽ xu (trong suốt)
-        pygame.draw.circle(surface, (*coin_color, 200), (cx, cy), 10)
-        pygame.draw.circle(surface, (255, 255, 200, 150), (cx, cy), 10, 2)
-        pygame.draw.circle(surface, (255, 255, 255, 200), (cx - 3, cy - 3), 3)
+        # Vẽ xu lên surface riêng để hỗ trợ alpha
+        coin_surf = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
+        lcx = CELL_SIZE - 16
+        lcy = CELL_SIZE - 16
+        pygame.draw.circle(coin_surf, (*coin_color, 200), (lcx, lcy), 10)
+        pygame.draw.circle(coin_surf, (255, 255, 200, 150), (lcx, lcy), 10, 2)
+        pygame.draw.circle(coin_surf, (255, 255, 255, 200), (lcx - 3, lcy - 3), 3)
+        surface.blit(coin_surf, (dx, dy))
 
         # Chữ $ (nếu có font)
         try:

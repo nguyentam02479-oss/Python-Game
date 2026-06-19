@@ -612,16 +612,6 @@ class UIManager:
                           key="back_menu", primary_color=(100, 40, 40))
         self.btn_rects["back_menu"] = btn_back
 
-        # ---- Hiển thị công cụ đang kích hoạt ----
-        if manager.active_tool:
-            tool_names = {"hammer": "🔨 Cái Chày", "mixer": "🌀 Máy Trộn"}
-            active_txt = f"Đang dùng: {tool_names.get(manager.active_tool, '')}"
-            # Hộp thông báo công cụ
-            notif_surf = _make_surface_with_alpha(sw - 10, 36, (200, 140, 0), 220)
-            self.screen.blit(notif_surf, (sx + 5, GRID_OFFSET_Y + GRID_ROWS * CELL_SIZE - 50))
-            self._draw_text_with_emoji(active_txt, self.font_small, COLOR_BLACK, sx + sw // 2,
-                            GRID_OFFSET_Y + GRID_ROWS * CELL_SIZE - 33,
-                            center=True)
 
     def _draw_inventory(self, manager, sx: int, y: int, sw: int) -> int:
         """
@@ -729,6 +719,8 @@ class UIManager:
     # UI.py - SỬA HÀM _draw_shop_item (BẢN 3 - XU + NÚT CÙNG HÀNG NGANG)
     # =============================================================================
 
+    # UI.py - CẬP NHẬT _draw_shop_item
+
     def _draw_shop_item(self, manager, key: str, item: dict,
                         x: int, y: int, w: int):
         """Vẽ một hàng vật phẩm trong Shop."""
@@ -754,11 +746,7 @@ class UIManager:
         self._draw_text(item["description"], self.font_small, COLOR_TEXT_BODY,
                         x + 72, y + 38)
 
-        # ============================================================
-        # PHẦN BÊN PHẢI - KHO Ở TRÊN, XU + NÚT CÙNG HÀNG
-        # ============================================================
-
-        right_start = x + w - 155  # Vị trí bắt đầu cột bên phải
+        right_start = x + w - 155
 
         # ---- Dòng 1: Kho (TRÊN CÙNG) ----
         count = manager.inventory.get(key, 0)
@@ -775,8 +763,9 @@ class UIManager:
         self._draw_text_with_emoji(f"💰 {price}", self.font_medium, price_color,
                                    right_start, y + 34)
 
-        # Vẽ nút Mua bên phải (cùng hàng với giá xu)
-        btn = pygame.Rect(right_start + 70, y + 32, 68, 26)
+        # Vẽ nút Mua bên phải
+        # TĂNG KÍCH THƯỚC NÚT ĐỂ DỄ BẤM HƠN
+        btn = pygame.Rect(right_start + 60, y + 30, 78, 30)
         self._draw_button(btn, "Mua", self.font_tiny,
                           key=f"buy_{key}",
                           primary_color=COLOR_BTN_BUY if can_buy else COLOR_BTN_DISABLED,
@@ -1068,6 +1057,8 @@ class UIManager:
     # XỬ LÝ SỰ KIỆN CLICK
     # =========================================================================
 
+    # UI.py - SỬA HÀM handle_click
+
     def handle_click(self, pos: Tuple[int, int], manager, grid) -> str:
         """
         Xử lý click chuột vào các nút UI.
@@ -1078,99 +1069,149 @@ class UIManager:
         :param grid: Grid object
         :return: Chuỗi tên hành động hoặc "" nếu không có
         """
+
+        # ---- ƯU TIÊN 1: XỬ LÝ NÚT OVERLAY (Shop/Mission) TRƯỚC ----
+        # Các nút overlay có key bắt đầu bằng buy_, claim_, close_shop, close_mission
+        overlay_keys = {"buy_", "claim_", "close_shop", "close_mission"}
+
         for key, rect in self.btn_rects.items():
             if not rect.collidepoint(pos):
                 continue
 
-            # Âm thanh click nút chung (buy_/claim_/use_ đã có âm thanh
-            # riêng — thành công/thất bại — được phát trong manager.py)
-            if not (key.startswith("buy_") or key.startswith("claim_")
-                    or key.startswith("use_")):
-                SoundManager.play("button")  # ← THÊM
+            # Kiểm tra đây có phải nút overlay không
+            is_overlay = any(key.startswith(p) for p in ["buy_", "claim_"]) or key in ["close_shop", "close_mission"]
 
-            # ---- Menu chính ----
-            if key == "menu_basic":
-                manager.start_game(GameMode.BASIC)
-                grid.initialize(GameMode.BASIC)
-                return "start_basic"
+            if is_overlay:
+                # Xử lý nút overlay
+                return self._handle_overlay_click(key, manager, grid)
 
-            if key == "menu_challenge":
-                manager.start_game(GameMode.CHALLENGE)
-                grid.initialize(GameMode.CHALLENGE)
-                return "start_challenge"
+        # ---- ƯU TIÊN 2: XỬ LÝ NÚT SIDEBAR (chỉ khi không có overlay nào đang mở) ----
+        if manager.state in (State.SHOP, State.MISSION):
+            # Nếu đang ở overlay, không xử lý sidebar
+            return ""
 
-            if key == "menu_mission":
-                manager.return_state = manager.state
-                manager.state = State.MISSION
-                return "open_mission"
+        for key, rect in self.btn_rects.items():
+            if not rect.collidepoint(pos):
+                continue
 
-            if key == "menu_shop":
-                manager.return_state = manager.state
-                manager.state = State.SHOP
-                return "open_shop"
+            # Xử lý nút sidebar
+            return self._handle_sidebar_click(key, manager, grid)
 
-            # ---- HUD Sidebar ----
-            if key == "open_shop":
-                manager.return_state = manager.state
-                manager.state = State.SHOP
-                return "open_shop"
+        return ""
 
-            if key == "open_mission":
-                manager.return_state = manager.state
-                manager.state = State.MISSION
-                return "open_mission"
+    def _handle_overlay_click(self, key: str, manager, grid) -> str:
+        """Xử lý click vào các nút trong overlay."""
 
-            if key == "back_menu":
-                manager.cancel_active_tool()
-                manager.reset_to_menu()
-                return "back_menu"
+        # ---- Shop ----
+        if key.startswith("buy_"):
+            item_key = key[4:]
+            manager.buy_item(item_key)
+            return f"buy_{item_key}"
 
-            # ---- Tắt/mở Nhạc nền & Hiệu ứng âm thanh ----
-            if key == "toggle_music":
-                SoundManager.toggle_music()
-                return "toggle_music"
+        if key == "close_shop":
+            manager.state = manager.return_state
+            return "close_shop"
 
-            if key == "toggle_sfx":
-                SoundManager.toggle_sfx()
-                return "toggle_sfx"
+        # ---- Mission ----
+        if key.startswith("claim_"):
+            mission_id = key[6:]
+            manager.claim_mission_reward(mission_id)
+            return f"claim_{mission_id}"
 
-            # ---- Kho vật phẩm ----
-            if key.startswith("use_"):
-                item_key = key[4:]
-                if item_key == "mixer":
-                    manager.apply_mixer_to_grid(grid)
-                else:
-                    manager.use_item(item_key)
+        if key == "close_mission":
+            manager.state = manager.return_state
+            return "close_mission"
+
+        return ""
+
+    def _handle_sidebar_click(self, key: str, manager, grid) -> str:
+        """Xử lý click vào các nút sidebar."""
+
+        # Âm thanh click nút chung
+        if not (key.startswith("use_")):
+            SoundManager.play("button")
+
+        # ---- Menu chính ----
+        if key == "menu_basic":
+            manager.start_game(GameMode.BASIC)
+            grid.initialize(GameMode.BASIC)
+            return "start_basic"
+
+        if key == "menu_challenge":
+            manager.start_game(GameMode.CHALLENGE)
+            grid.initialize(GameMode.CHALLENGE)
+            return "start_challenge"
+
+        if key == "menu_mission":
+            manager.return_state = manager.state
+            manager.state = State.MISSION
+            return "open_mission"
+
+        if key == "menu_shop":
+            manager.return_state = manager.state
+            manager.state = State.SHOP
+            return "open_shop"
+
+        # ---- HUD Sidebar ----
+        if key == "open_shop":
+            manager.return_state = manager.state
+            manager.state = State.SHOP
+            return "open_shop"
+
+        if key == "open_mission":
+            manager.return_state = manager.state
+            manager.state = State.MISSION
+            return "open_mission"
+
+        if key == "back_menu":
+            manager.cancel_active_tool()
+            manager.reset_to_menu()
+            return "back_menu"
+
+        # ---- Tắt/mở Nhạc nền & Hiệu ứng âm thanh ----
+        if key == "toggle_music":
+            SoundManager.toggle_music()
+            return "toggle_music"
+
+        if key == "toggle_sfx":
+            SoundManager.toggle_sfx()
+            return "toggle_sfx"
+
+        # ---- Kho vật phẩm ----
+        if key.startswith("use_"):
+            # Kiểm tra đang ở overlay không (an toàn)
+            if manager.state in (State.SHOP, State.MISSION):
+                return ""
+
+            item_key = key[4:]
+
+            # MIXER: xử lý đặc biệt - áp dụng ngay khi nhấn
+            if item_key == "mixer":
+                # Kiểm tra có đủ số lượng không
+                if manager.inventory.get("mixer", 0) <= 0:
+                    SoundManager.play("invalid")
+                    manager._show_notification("Không có Hoán Đổi trong kho!")
+                    return ""
+                # Áp dụng mixer và trừ số lượng
+                success = manager.apply_mixer_to_grid(grid)
+                if success:
+                    # Trừ số lượng đã được xử lý trong use_item
+                    # Nhưng use_item sẽ trừ, nên gọi use_item trước
+                    manager.use_item("mixer")
+                return f"use_{item_key}"
+            else:
+                # Các vật phẩm khác
+                manager.use_item(item_key)
                 return f"use_{item_key}"
 
-            # ---- Shop ----
-            if key.startswith("buy_"):
-                item_key = key[4:]
-                manager.buy_item(item_key)
-                return f"buy_{item_key}"
+        # ---- End Screen ----
+        if key == "replay":
+            manager.start_game(manager.mode)
+            grid.initialize(manager.mode)
+            return "replay"
 
-            if key == "close_shop":
-                manager.state = manager.return_state
-                return "close_shop"
-
-            # ---- Mission ----
-            if key.startswith("claim_"):
-                mission_id = key[6:]
-                manager.claim_mission_reward(mission_id)
-                return f"claim_{mission_id}"
-
-            if key == "close_mission":
-                manager.state = manager.return_state
-                return "close_mission"
-
-            # ---- End Screen ----
-            if key == "replay":
-                manager.start_game(manager.mode)
-                grid.initialize(manager.mode)
-                return "replay"
-
-            if key == "to_menu":
-                manager.reset_to_menu()
-                return "to_menu"
+        if key == "to_menu":
+            manager.reset_to_menu()
+            return "to_menu"
 
         return ""

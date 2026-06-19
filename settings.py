@@ -1,3 +1,4 @@
+
 # =============================================================================
 # FILE: settings.py
 # Mô tả: Toàn bộ các hằng số cấu hình cho game Sweet Cake Match-3

@@ -1,0 +1,18 @@
+{
+  "coins": 50,
+  "high_score": 0,
+  "inventory": {
+    "hammer": 0,
+    "mixer": 0,
+    "extra_time": 0,
+    "extra_moves": 0
+  },
+  "missions": {},
+  "total_games_played": 0,
+  "total_wins": 0,
+  "total_score_earned": 0,
+  "stats": {
+    "daily_streak": 0,
+    "last_play_date": null
+  }
+}

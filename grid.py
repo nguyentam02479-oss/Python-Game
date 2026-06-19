@@ -523,15 +523,11 @@ class Grid:
             return (r, c)
         return None
 
+    # grid.py - SỬA HÀM handle_click
+
     def handle_click(self, px: int, py: int, manager) -> bool:
         """
         Xử lý click chuột trái vào bàn chơi.
-        - Click lần 1: chọn ô
-        - Click lần 2: nếu ô kề -> thử swap; nếu không kề -> đổi ô chọn
-
-        :param px, py: Tọa độ pixel click
-        :param manager: GameEngine để ghi nhận lượt đi
-        :return: True nếu có swap xảy ra
         """
         cell = self.get_cell_at_pixel(px, py)
         if cell is None:
@@ -551,12 +547,16 @@ class Grid:
             manager.active_tool = None
             return success
 
+        # Nếu đang dùng công cụ Mixer - KHÔNG XỬ LÝ Ở ĐÂY
+        # Mixer được xử lý trong UI khi nhấn nút use_mixer
+        # Nó sẽ gọi manager.apply_mixer_to_grid(grid) và trừ số lượng
+
         if self.selected_pos is None:
             # Lần chọn đầu tiên
             self.selected_pos = (r, c)
             if self.grid[r][c]:
                 self.grid[r][c].is_selected = True
-                SoundManager.play("select")  # ← THÊM
+                SoundManager.play("select")
         else:
             prev_r, prev_c = self.selected_pos
             # Bỏ chọn ô cũ
@@ -567,11 +567,8 @@ class Grid:
             is_adjacent = (abs(r - prev_r) + abs(c - prev_c) == 1)
 
             if is_adjacent:
-                # Thử hoán đổi
-                free_swap = (manager.active_tool == "mixer")
-                success = self.swap_pieces(prev_r, prev_c, r, c, free=free_swap)
-                if manager.active_tool == "mixer":
-                    manager.active_tool = None
+                # Thử hoán đổi (không dùng free_swap vì mixer đã được xử lý riêng)
+                success = self.swap_pieces(prev_r, prev_c, r, c, free=False)
                 if success:
                     manager.use_move()  # Trừ lượt đi
                 self.selected_pos = None

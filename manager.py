@@ -295,65 +295,64 @@ class GameEngine:
         self._show_notification(f"Đã mua: {item['name']}!")
         return True
 
+    # manager.py - SỬA HÀM use_item
+
     def use_item(self, item_key: str) -> bool:
         """
         Kích hoạt sử dụng vật phẩm từ kho đồ.
-        Một số vật phẩm có hiệu lực ngay (extra_time, extra_moves),
-        số khác kích hoạt chế độ chờ (hammer, mixer).
-
-        :param item_key: Tên vật phẩm
-        :return: True nếu sử dụng thành công
         """
         if self.inventory.get(item_key, 0) <= 0:
-            SoundManager.play("invalid")  # ← THÊM
+            SoundManager.play("invalid")
             self._show_notification("Không có vật phẩm này trong kho!")
             return False
 
-            # Bước 2: Kiểm tra đang chơi
         if self.state != State.PLAYING:
-            SoundManager.play("invalid")  # ← THÊM
+            SoundManager.play("invalid")
             self._show_notification("Hãy bắt đầu ván chơi trước khi dùng!")
             return False
 
-            # Bước 3: Kiểm tra đúng chế độ rồi mới trừ kho
         if item_key == "extra_time":
             if self.mode != GameMode.BASIC:
-                SoundManager.play("invalid")  # ← THÊM
+                SoundManager.play("invalid")
                 self._show_notification("+30 Giây chỉ dùng được ở Chế Độ Thời Gian!")
                 return False
             self.add_time(30.0)
             self.inventory["extra_time"] -= 1
-            SoundManager.play("button")  # ← THÊM
+            SoundManager.play("button")
             self._show_notification("+30 Giây đã được cộng!")
             return True
 
         if item_key == "extra_moves":
             if self.mode != GameMode.CHALLENGE:
-                SoundManager.play("invalid")  # ← THÊM
+                SoundManager.play("invalid")
                 self._show_notification("+5 Lượt chỉ dùng được ở Chế Độ Thử Thách!")
                 return False
             self.moves_left += 5
             self.inventory["extra_moves"] -= 1
-            SoundManager.play("button")  # ← THÊM
+            SoundManager.play("button")
             self._show_notification("+5 Lượt đi!")
             return True
 
-        if item_key in ("hammer", "mixer"):
-            SoundManager.play("select")  # ← THÊM: kích hoạt/hủy công cụ
-            if self.active_tool == item_key:
+        if item_key == "hammer":
+            SoundManager.play("select")
+            if self.active_tool == "hammer":
                 self.active_tool = None
                 self._show_notification("Đã hủy công cụ.")
             else:
-                self.active_tool = item_key
-                names = {"hammer": "Phá Ô", "mixer": "Hoán Đổi"}
-                self._show_notification(
-                    f"Đã kích hoạt {names[item_key]}! "
-                    f"{'Click vào ô để phá' if item_key == 'hammer' else 'Nhấn để trộn ngẫu nhiên'}."
-                )
-                if item_key == "mixer":
-                    self.inventory["mixer"] -= 1
-                    return True
-                self.inventory["hammer"] -= 1
+                self.active_tool = "hammer"
+                self.inventory["hammer"] -= 1  # TRỪ KHI KÍCH HOẠT
+                self._show_notification("Đã kích hoạt Phá Ô! Click vào ô để phá.")
+            return True
+
+        if item_key == "mixer":
+            SoundManager.play("select")
+            if self.active_tool == "mixer":
+                self.active_tool = None
+                self._show_notification("Đã hủy công cụ.")
+            else:
+                self.active_tool = "mixer"
+                self.inventory["mixer"] -= 1  # TRỪ KHI KÍCH HOẠT
+                self._show_notification("Đã kích hoạt Hoán Đổi! Click vào 2 ô để hoán đổi.")
             return True
 
         return False

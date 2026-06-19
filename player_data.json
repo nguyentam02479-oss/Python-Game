@@ -1,9 +1,9 @@
 {
   "version": 1,
   "created_at": 1781845079.6682544,
-  "last_saved": 1781871779.6142566,
+  "last_saved": 1781884567.7695694,
   "player": {
-    "coins": 105,
+    "coins": 5,
     "high_score": 3795,
     "total_games_played": 0,
     "total_pieces_destroyed": 0,
@@ -12,7 +12,7 @@
     "total_coins_spent": 0
   },
   "inventory": {
-    "hammer": 1,
+    "hammer": 0,
     "mixer": 0,
     "extra_time": 0,
     "extra_moves": 1
@@ -48,8 +48,8 @@
       "last_reset": 1781845079.6682544
     },
     "hourly_score": {
-      "progress": 235,
-      "claimed": false,
+      "progress": 500,
+      "claimed": true,
       "last_reset": 1781845079.6682544
     },
     "session_frozen": {
