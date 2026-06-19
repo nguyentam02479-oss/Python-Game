@@ -11,6 +11,7 @@ from settings import (
     SCREEN_W, SCREEN_H, State, GameMode,
     SIDEBAR_X, SIDEBAR_W, GRID_OFFSET_X, GRID_OFFSET_Y, GRID_ROWS, GRID_COLS, CELL_SIZE,
     SHOP_ITEMS, MISSIONS,
+    MISSION_PANEL_W, MISSION_PANEL_H, MISSION_ROW_H, MISSION_SCROLL_SPEED,
     COLOR_BG_DARK, COLOR_BG_PANEL, COLOR_BG_SIDEBAR,
     COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW, COLOR_GOLD,
     COLOR_RED, COLOR_GREEN, COLOR_BLUE_ICE,
@@ -60,6 +61,10 @@ class UIManager:
         # ---- Bộ đếm hoạt ảnh tiêu đề ----
         self._title_anim_t: float = 0.0
         self._bg_anim_t: float = 0.0
+
+        # ---- Trạng thái cuộn bảng Nhiệm Vụ ----
+        self._mission_scroll: float = 0.0      # Vị trí cuộn hiện tại (pixel)
+        self._mission_max_scroll: float = 0.0  # Giới hạn cuộn tối đa (tính lại mỗi frame vẽ)
 
     def _init_fonts(self):
         """Khởi tạo font chữ (hỗ trợ tiếng Việt) và font emoji riêng."""
@@ -777,9 +782,9 @@ class UIManager:
     # =========================================================================
 
     def _draw_mission_overlay(self, manager):
-        """Vẽ bảng Nhiệm Vụ (Mission) dạng overlay."""
-        panel_w = 520
-        panel_h = 490
+        """Vẽ bảng Nhiệm Vụ (Mission) dạng overlay có thể cuộn dọc."""
+        panel_w = MISSION_PANEL_W
+        panel_h = MISSION_PANEL_H
         panel_x = (SCREEN_W - panel_w) // 2
         panel_y = (SCREEN_H - panel_h) // 2
 
@@ -794,27 +799,89 @@ class UIManager:
         self.screen.blit(panel, (panel_x, panel_y))
 
         # ---- Tiêu đề ----
-        self._draw_text_shadow("📋 NHIỆM VỤ", self.font_large, COLOR_TEXT_TITLE,
+        completable = manager.count_completable_missions()
+        title = "📋 NHIỆM VỤ" + (f"  ({completable} sẵn sàng)" if completable else "")
+        self._draw_text_shadow(title, self.font_large, COLOR_TEXT_TITLE,
                                SCREEN_W // 2, panel_y + 26, center=True)
         pygame.draw.line(self.screen, (150, 120, 30),
                          (panel_x + 20, panel_y + 60),
                          (panel_x + panel_w - 20, panel_y + 60), 2)
 
-        # ---- Danh sách nhiệm vụ ----
-        miss_y = panel_y + 76
-        for m in manager.missions:
-            self._draw_mission_item(manager, m, panel_x + 16,
-                                    miss_y, panel_w - 32)
-            miss_y += 88
+        # ---- Vùng nội dung có thể cuộn ----
+        content_top = panel_y + 72
+        content_bottom = panel_y + panel_h - 60
+        content_h = content_bottom - content_top
+        row_h = MISSION_ROW_H
+        total_h = len(manager.missions) * row_h
+
+        self._mission_max_scroll = max(0.0, total_h - content_h)
+        self._mission_scroll = max(0.0, min(self._mission_scroll, self._mission_max_scroll))
+
+        # Xóa các rect nút "Nhận Thưởng" cũ trước khi vẽ lại (tránh click ảo
+        # vào nút của hàng đã cuộn ra khỏi vùng hiển thị)
+        for k in [k for k in self.btn_rects if k.startswith("claim_")]:
+            del self.btn_rects[k]
+
+        content_rect = pygame.Rect(panel_x, content_top, panel_w, content_h)
+        prev_clip = self.screen.get_clip()
+        self.screen.set_clip(content_rect)
+
+        for i, m in enumerate(manager.missions):
+            row_y = content_top + i * row_h - int(self._mission_scroll)
+            # Bỏ qua các hàng nằm hoàn toàn ngoài vùng hiển thị
+            if row_y + row_h < content_top or row_y > content_bottom:
+                continue
+            self._draw_mission_item(manager, m, panel_x + 16, row_y,
+                                    panel_w - 32, content_rect)
+
+        self.screen.set_clip(prev_clip)
+
+        # ---- Thanh cuộn (scrollbar) ----
+        if self._mission_max_scroll > 0:
+            track_x = panel_x + panel_w - 14
+            track = pygame.Rect(track_x, content_top, 6, content_h)
+            pygame.draw.rect(self.screen, (60, 40, 80), track, border_radius=3)
+
+            thumb_h = max(30, int(content_h * (content_h / total_h)))
+            thumb_travel = content_h - thumb_h
+            thumb_y = content_top + int(
+                thumb_travel * (self._mission_scroll / self._mission_max_scroll)
+            )
+            thumb = pygame.Rect(track_x, thumb_y, 6, thumb_h)
+            pygame.draw.rect(self.screen, (220, 180, 60), thumb, border_radius=3)
+
+            # ---- Nút mũi tên lên/xuống ----
+            btn_up = pygame.Rect(panel_x + panel_w - 40, content_top - 4, 26, 24)
+            self._draw_button(btn_up, "↑", self.font_small, key="mission_scroll_up",
+                              primary_color=(100, 60, 20))
+            self.btn_rects["mission_scroll_up"] = btn_up
+
+            btn_down = pygame.Rect(panel_x + panel_w - 40, content_bottom - 20, 26, 24)
+            self._draw_button(btn_down, "↓", self.font_small, key="mission_scroll_down",
+                              primary_color=(100, 60, 20))
+            self.btn_rects["mission_scroll_down"] = btn_down
+        else:
+            self.btn_rects.pop("mission_scroll_up", None)
+            self.btn_rects.pop("mission_scroll_down", None)
 
         # ---- Nút Đóng ----
         btn_close = pygame.Rect(panel_x + panel_w // 2 - 80,
-                                panel_y + panel_h - 55, 160, 40)
+                                panel_y + panel_h - 46, 160, 36)
         self._draw_button(btn_close, "X Đóng", self.font_medium,
                           key="close_mission", primary_color=(100, 60, 20))
         self.btn_rects["close_mission"] = btn_close
 
-    def _draw_mission_item(self, manager, mission: dict, x: int, y: int, w: int):
+    def handle_mission_scroll(self, amount: int):
+        """
+        Cuộn bảng Nhiệm Vụ theo amount pixel (dương = cuộn xuống).
+        Gọi từ vòng lặp sự kiện chính khi nhận MOUSEWHEEL, hoặc từ
+        các nút mũi tên lên/xuống.
+        """
+        self._mission_scroll += amount
+        self._mission_scroll = max(0.0, min(self._mission_scroll, self._mission_max_scroll))
+
+    def _draw_mission_item(self, manager, mission: dict, x: int, y: int, w: int,
+                           content_rect: Optional[pygame.Rect] = None):
         """Vẽ một hàng nhiệm vụ trong bảng Mission."""
         completed = mission["progress"] >= mission["target"]
         claimed = mission["claimed"]
@@ -871,7 +938,14 @@ class UIManager:
             self._draw_button(btn, "Nhận Thưởng", self.font_tiny,
                               key=f"claim_{mission['id']}",
                               primary_color=COLOR_BTN_CLAIM)
-            self.btn_rects[f"claim_{mission['id']}"] = btn
+            # Chỉ đăng ký vùng click trong phần thực sự hiển thị (đã bị cắt bởi
+            # vùng nội dung cuộn) để tránh click "ma" vào hàng bị cuộn che khuất
+            if content_rect is not None:
+                clipped = btn.clip(content_rect)
+                if clipped.width > 0 and clipped.height > 0:
+                    self.btn_rects[f"claim_{mission['id']}"] = clipped
+            else:
+                self.btn_rects[f"claim_{mission['id']}"] = btn
         else:
             self._draw_text("Chưa xong", self.font_tiny, (120, 100, 140),
                             x + w - 115, y + 44)
@@ -1071,15 +1145,17 @@ class UIManager:
         """
 
         # ---- ƯU TIÊN 1: XỬ LÝ NÚT OVERLAY (Shop/Mission) TRƯỚC ----
-        # Các nút overlay có key bắt đầu bằng buy_, claim_, close_shop, close_mission
-        overlay_keys = {"buy_", "claim_", "close_shop", "close_mission"}
-
+        # Các nút overlay có key bắt đầu bằng buy_, claim_, mission_scroll_,
+        # close_shop, close_mission
         for key, rect in self.btn_rects.items():
             if not rect.collidepoint(pos):
                 continue
 
             # Kiểm tra đây có phải nút overlay không
-            is_overlay = any(key.startswith(p) for p in ["buy_", "claim_"]) or key in ["close_shop", "close_mission"]
+            is_overlay = (
+                any(key.startswith(p) for p in ["buy_", "claim_", "mission_scroll_"])
+                or key in ["close_shop", "close_mission"]
+            )
 
             if is_overlay:
                 # Xử lý nút overlay
@@ -1118,8 +1194,17 @@ class UIManager:
             manager.claim_mission_reward(mission_id)
             return f"claim_{mission_id}"
 
+        if key == "mission_scroll_up":
+            self.handle_mission_scroll(-MISSION_SCROLL_SPEED)
+            return "mission_scroll_up"
+
+        if key == "mission_scroll_down":
+            self.handle_mission_scroll(MISSION_SCROLL_SPEED)
+            return "mission_scroll_down"
+
         if key == "close_mission":
             manager.state = manager.return_state
+            self._mission_scroll = 0.0
             return "close_mission"
 
         return ""
@@ -1145,6 +1230,7 @@ class UIManager:
         if key == "menu_mission":
             manager.return_state = manager.state
             manager.state = State.MISSION
+            self._mission_scroll = 0.0
             return "open_mission"
 
         if key == "menu_shop":
@@ -1161,6 +1247,7 @@ class UIManager:
         if key == "open_mission":
             manager.return_state = manager.state
             manager.state = State.MISSION
+            self._mission_scroll = 0.0
             return "open_mission"
 
         if key == "back_menu":

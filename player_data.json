@@ -1,9 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "created_at": 1781845079.6682544,
-  "last_saved": 1781884567.7695694,
+  "last_saved": 1781907398.5716834,
   "player": {
-    "coins": 5,
+    "coins": 65,
     "high_score": 3795,
     "total_games_played": 0,
     "total_pieces_destroyed": 0,
@@ -13,9 +13,9 @@
   },
   "inventory": {
     "hammer": 0,
-    "mixer": 0,
+    "mixer": 2,
     "extra_time": 0,
-    "extra_moves": 1
+    "extra_moves": 2
   },
   "stats": {
     "basic": {
@@ -48,14 +48,59 @@
       "last_reset": 1781845079.6682544
     },
     "hourly_score": {
-      "progress": 500,
-      "claimed": true,
+      "progress": 0,
+      "claimed": false,
       "last_reset": 1781845079.6682544
     },
     "session_frozen": {
       "progress": 0,
       "claimed": false,
       "last_reset": 1781845079.6682544
+    },
+    "daily_games": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "daily_score": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "daily_coins": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "daily_shop": {
+      "progress": 1,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "daily_win_challenge": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "daily_tool_use": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "hourly_pieces": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "session_pieces": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
+    },
+    "session_combo": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781907339.4509795
     }
   },
   "settings": {

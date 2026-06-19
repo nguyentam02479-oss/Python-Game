@@ -15,7 +15,8 @@ from settings import (
     SCREEN_W, SCREEN_H, FPS,
     State, GameMode, PieceType,
     IMAGE_BG, IMAGE_CAKES, PIECE_COLORS, CELL_SIZE,
-    GRID_ROWS, GRID_COLS, GRID_OFFSET_X, GRID_OFFSET_Y
+    GRID_ROWS, GRID_COLS, GRID_OFFSET_X, GRID_OFFSET_Y,
+    MISSION_SCROLL_SPEED
 )
 from piece import CakePiece, clear_particles
 from grid import Grid
@@ -232,6 +233,12 @@ def main():
             if event.type == pygame.MOUSEMOTION:
                 grid.set_hover(event.pos[0], event.pos[1])
                 ui.update(0, event.pos)  # Cập nhật vị trí chuột cho UI
+
+            # Cuộn chuột (dùng để cuộn bảng Nhiệm Vụ khi đang mở)
+            if event.type == pygame.MOUSEWHEEL:
+                if manager.state == State.MISSION:
+                    # event.y > 0 = cuộn lên (lăn lên), < 0 = cuộn xuống
+                    ui.handle_mission_scroll(-event.y * MISSION_SCROLL_SPEED)
 
             # Thả chuột
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:

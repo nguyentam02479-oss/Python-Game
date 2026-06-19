@@ -1,4 +1,3 @@
-
 # =============================================================================
 # FILE: settings.py
 # Mô tả: Toàn bộ các hằng số cấu hình cho game Sweet Cake Match-3
@@ -159,6 +158,10 @@ SHOP_ITEMS = {
 # -----------------------------------------------------------------------------
 # CẤU HÌNH MISSION (Nhiệm vụ)
 # -----------------------------------------------------------------------------
+# Gồm các nhóm:
+#   - "daily"   : reset mỗi 24 giờ
+#   - "hourly"  : reset mỗi giờ
+#   - "session" : reset mỗi khi bắt đầu ván chơi mới
 MISSIONS = [
     {
         "id":          "daily_pieces",
@@ -166,7 +169,7 @@ MISSIONS = [
         "description": "Phá 50 viên bánh trong ngày",
         "target":      50,
         "reward_coin": 20,
-        "type":        "daily",     # daily = reset mỗi ngày
+        "type":        "daily",
     },
     {
         "id":          "daily_combo",
@@ -177,12 +180,68 @@ MISSIONS = [
         "type":        "daily",
     },
     {
+        "id":          "daily_games",
+        "name":        "Đầu Bếp Chăm Chỉ",
+        "description": "Chơi 3 ván trong ngày",
+        "target":      3,
+        "reward_coin": 15,
+        "type":        "daily",
+    },
+    {
+        "id":          "daily_score",
+        "name":        "Bậc Thầy Điểm Số",
+        "description": "Đạt tổng 2000 điểm trong ngày",
+        "target":      2000,
+        "reward_coin": 30,
+        "type":        "daily",
+    },
+    {
+        "id":          "daily_coins",
+        "name":        "Hũ Xu Đầy",
+        "description": "Kiếm 100 xu trong ngày",
+        "target":      100,
+        "reward_coin": 20,
+        "type":        "daily",
+    },
+    {
+        "id":          "daily_shop",
+        "name":        "Khách Quen Tiệm Bánh",
+        "description": "Mua 2 vật phẩm trong cửa hàng",
+        "target":      2,
+        "reward_coin": 15,
+        "type":        "daily",
+    },
+    {
+        "id":          "daily_win_challenge",
+        "name":        "Nhà Vô Địch Thử Thách",
+        "description": "Thắng 1 ván Chế Độ Thử Thách",
+        "target":      1,
+        "reward_coin": 30,
+        "type":        "daily",
+    },
+    {
+        "id":          "daily_tool_use",
+        "name":        "Trợ Lý Đắc Lực",
+        "description": "Sử dụng vật phẩm 3 lần trong ngày",
+        "target":      3,
+        "reward_coin": 10,
+        "type":        "daily",
+    },
+    {
         "id":          "hourly_score",
         "name":        "Ghi Điểm Nhanh",
         "description": "Đạt 500 điểm trong 1 giờ",
         "target":      500,
         "reward_coin": 10,
-        "type":        "hourly",    # hourly = reset mỗi giờ
+        "type":        "hourly",
+    },
+    {
+        "id":          "hourly_pieces",
+        "name":        "Tốc Độ Ánh Chớp",
+        "description": "Phá 80 viên bánh trong 1 giờ",
+        "target":      80,
+        "reward_coin": 15,
+        "type":        "hourly",
     },
     {
         "id":          "session_frozen",
@@ -190,9 +249,33 @@ MISSIONS = [
         "description": "Phá 10 ô băng trong phiên này",
         "target":      10,
         "reward_coin": 25,
-        "type":        "session",   # session = trong phiên chơi hiện tại
+        "type":        "session",
+    },
+    {
+        "id":          "session_pieces",
+        "name":        "Cơn Lốc Bánh Ngọt",
+        "description": "Phá 100 viên bánh trong phiên này",
+        "target":      100,
+        "reward_coin": 20,
+        "type":        "session",
+    },
+    {
+        "id":          "session_combo",
+        "name":        "Chuỗi Combo Bất Bại",
+        "description": "Tạo 8 combo trong phiên này",
+        "target":      8,
+        "reward_coin": 20,
+        "type":        "session",
     },
 ]
+
+# -----------------------------------------------------------------------------
+# CẤU HÌNH BẢNG NHIỆM VỤ (Mission Panel - danh sách có thể cuộn)
+# -----------------------------------------------------------------------------
+MISSION_PANEL_W      = 560   # Chiều rộng panel Mission
+MISSION_PANEL_H      = 600   # Chiều cao panel Mission (cố định, không phụ thuộc số nhiệm vụ)
+MISSION_ROW_H        = 88    # Chiều cao mỗi hàng nhiệm vụ (bao gồm khoảng cách)
+MISSION_SCROLL_SPEED = 60    # Số pixel cuộn mỗi nấc lăn chuột / mỗi lần bấm nút mũi tên
 
 # -----------------------------------------------------------------------------
 # HIỆU ỨNG HOẠT ẢNH

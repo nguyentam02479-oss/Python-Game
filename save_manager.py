@@ -9,11 +9,13 @@ import os
 import time
 from typing import Optional
 
+from settings import MISSIONS  # ← Dùng danh sách nhiệm vụ chuẩn từ settings.py
+
 # Đường dẫn file lưu (cùng thư mục với game)
 SAVE_FILE = "player_data.json"
 
 # Phiên bản cấu trúc save (tăng khi thay đổi schema để xử lý tương thích)
-SAVE_VERSION = 1
+SAVE_VERSION = 2
 
 
 # =============================================================================
@@ -75,11 +77,11 @@ def _default_save_data() -> dict:
         "recent_games": [],
 
         # --- Tiến độ nhiệm vụ ---
+        # Tự động lấy từ danh sách MISSIONS trong settings.py, đảm bảo mọi
+        # nhiệm vụ (hiện tại và sau này thêm vào) đều có chỗ lưu tiến độ.
         "missions": {
-            "daily_pieces":  {"progress": 0, "claimed": False, "last_reset": time.time()},
-            "daily_combo":   {"progress": 0, "claimed": False, "last_reset": time.time()},
-            "hourly_score":  {"progress": 0, "claimed": False, "last_reset": time.time()},
-            "session_frozen": {"progress": 0, "claimed": False, "last_reset": time.time()},
+            m["id"]: {"progress": 0, "claimed": False, "last_reset": now}
+            for m in MISSIONS
         },
 
         # --- Cài đặt người chơi ---

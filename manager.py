@@ -119,6 +119,9 @@ class GameEngine:
             f"Bắt đầu {'Chế Độ Thời Gian' if mode == GameMode.BASIC else 'Chế Độ Thử Thách'}!"
         )
 
+        # Cập nhật tiến độ nhiệm vụ "chơi N ván"
+        self._update_mission_progress("daily_games", 1)
+
     def reset_to_menu(self):
         """Quay về màn hình chính."""
         self.state = State.MENU
@@ -180,6 +183,10 @@ class GameEngine:
         if self.score > self.high_score:
             self.high_score = self.score
 
+        # Cập nhật tiến độ nhiệm vụ "đạt tổng điểm trong ngày"
+        if amount > 0:
+            self._update_mission_progress("daily_score", amount)
+
         # Thêm popup điểm
         self.score_popups.append({
             "text": f"+{amount}" + (f" x{combo}" if combo > 1 else ""),
@@ -205,6 +212,8 @@ class GameEngine:
         if amount > 0:
             SoundManager.play("coin")  # ← THÊM: âm thanh nhặt xu
             self._show_notification(f"+{amount} Xu!")
+            # Cập nhật tiến độ nhiệm vụ "kiếm xu trong ngày"
+            self._update_mission_progress("daily_coins", amount)
 
     def add_time(self, seconds: float):
         """
@@ -262,9 +271,12 @@ class GameEngine:
 
         # Cập nhật tiến độ nhiệm vụ
         self._update_mission_progress("daily_pieces", count)
+        self._update_mission_progress("session_pieces", count)
+        self._update_mission_progress("hourly_pieces", count)
         self._update_mission_progress("session_frozen", frozen_broken)
         if combo > 1:
             self._update_mission_progress("daily_combo", 1)
+            self._update_mission_progress("session_combo", 1)
         self._update_mission_progress("hourly_score", 0)  # Score update riêng
 
     # =========================================================================
@@ -293,6 +305,9 @@ class GameEngine:
         self.inventory[item_key] += 1
         SoundManager.play("shop_buy")  # ← THÊM
         self._show_notification(f"Đã mua: {item['name']}!")
+
+        # Cập nhật tiến độ nhiệm vụ "mua vật phẩm trong ngày"
+        self._update_mission_progress("daily_shop", 1)
         return True
 
     # manager.py - SỬA HÀM use_item
@@ -320,6 +335,7 @@ class GameEngine:
             self.inventory["extra_time"] -= 1
             SoundManager.play("button")
             self._show_notification("+30 Giây đã được cộng!")
+            self._update_mission_progress("daily_tool_use", 1)
             return True
 
         if item_key == "extra_moves":
@@ -331,6 +347,7 @@ class GameEngine:
             self.inventory["extra_moves"] -= 1
             SoundManager.play("button")
             self._show_notification("+5 Lượt đi!")
+            self._update_mission_progress("daily_tool_use", 1)
             return True
 
         if item_key == "hammer":
@@ -342,6 +359,7 @@ class GameEngine:
                 self.active_tool = "hammer"
                 self.inventory["hammer"] -= 1  # TRỪ KHI KÍCH HOẠT
                 self._show_notification("Đã kích hoạt Phá Ô! Click vào ô để phá.")
+                self._update_mission_progress("daily_tool_use", 1)
             return True
 
         if item_key == "mixer":
@@ -353,6 +371,7 @@ class GameEngine:
                 self.active_tool = "mixer"
                 self.inventory["mixer"] -= 1  # TRỪ KHI KÍCH HOẠT
                 self._show_notification("Đã kích hoạt Hoán Đổi! Click vào 2 ô để hoán đổi.")
+                self._update_mission_progress("daily_tool_use", 1)
             return True
 
         return False
@@ -495,6 +514,10 @@ class GameEngine:
         self._timer_active = False
         SoundManager.play("win")  # ← THÊM
         self._show_notification("Chúc mừng! Bạn đã thắng!", duration=3.0)
+
+        # Cập nhật tiến độ nhiệm vụ "thắng Chế Độ Thử Thách"
+        if self.mode == GameMode.CHALLENGE:
+            self._update_mission_progress("daily_win_challenge", 1)
 
     # =========================================================================
     # THÔNG BÁO VÀ POPUP
