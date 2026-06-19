@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "created_at": 1781845079.6682544,
+  "last_saved": 1781852799.2096086,
+  "player": {
+    "coins": 95,
+    "high_score": 3795,
+    "total_games_played": 0,
+    "total_pieces_destroyed": 0,
+    "total_combos": 0,
+    "total_coins_earned": 50,
+    "total_coins_spent": 0
+  },
+  "inventory": {
+    "hammer": 1,
+    "mixer": 0,
+    "extra_time": 0,
+    "extra_moves": 1
+  },
+  "stats": {
+    "basic": {
+      "games_played": 0,
+      "best_score": 0,
+      "total_score": 0,
+      "best_time_survived": 0.0,
+      "wins": 0,
+      "losses": 0
+    },
+    "challenge": {
+      "games_played": 0,
+      "best_score": 0,
+      "total_score": 0,
+      "wins": 0,
+      "losses": 0,
+      "best_moves_remaining": 0
+    }
+  },
+  "recent_games": [],
+  "missions": {
+    "daily_pieces": {
+      "progress": 50,
+      "claimed": true,
+      "last_reset": 1781845079.6682544
+    },
+    "daily_combo": {
+      "progress": 5,
+      "claimed": true,
+      "last_reset": 1781845079.6682544
+    },
+    "hourly_score": {
+      "progress": 500,
+      "claimed": true,
+      "last_reset": 1781845079.6682544
+    },
+    "session_frozen": {
+      "progress": 0,
+      "claimed": false,
+      "last_reset": 1781845079.6682544
+    }
+  },
+  "settings": {
+    "sfx_volume": 1.0,
+    "music_volume": 0.5,
+    "show_hints": true
+  }
+}
