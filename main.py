@@ -21,6 +21,7 @@ from piece import CakePiece, clear_particles
 from grid import Grid
 from manager import GameEngine
 from UI import UIManager
+from sound_manager import SoundManager  # ← THÊM: âm thanh
 
 
 # =============================================================================
@@ -111,6 +112,12 @@ def main():
     pygame.display.set_caption("Sweet Cake Match-3 🍰 ")
     screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
     clock = pygame.time.Clock()
+
+    # ---- Khởi tạo âm thanh (SFX sinh bằng code, không cần file) ----
+    SoundManager.init()
+    # Nhạc nền: đặt file của bạn vào thư mục "Audio/bg_music.mp3"
+    # (hoặc đổi tên/đường dẫn cho khớp với file bạn có).
+    SoundManager.play_music("Audio/bg_music.mp3", loop=True, volume=0.4)
 
     # Thiết lập icon cửa sổ (nếu có)
     try:

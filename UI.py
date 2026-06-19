@@ -19,6 +19,7 @@ from settings import (
     COLOR_TEXT_TITLE, COLOR_TEXT_BODY, COLOR_TEXT_COIN,
     BASIC_TIME_LIMIT,
 )
+from sound_manager import SoundManager  # ← THÊM: âm thanh nút bấm
 
 
 def _make_surface_with_alpha(w: int, h: int, color: tuple, alpha: int) -> pygame.Surface:
@@ -471,11 +472,27 @@ class UIManager:
                           self.font_small, key="menu_shop",
                           primary_color=(40, 130, 160))
 
+        # ---- Nút tắt/mở Nhạc nền & Hiệu ứng âm thanh (góc trên phải) ----
+        music_on = SoundManager.is_music_enabled()
+        sfx_on = SoundManager.is_sfx_enabled()
+
+        btn_music = pygame.Rect(SCREEN_W - 140, 20, 60, 50)
+        self._draw_button(btn_music, "🎵" if music_on else "🔇",
+                          self.font_medium, key="toggle_music",
+                          primary_color=(40, 130, 90) if music_on else (90, 50, 50))
+
+        btn_sfx = pygame.Rect(SCREEN_W - 70, 20, 60, 50)
+        self._draw_button(btn_sfx, "🔊" if sfx_on else "🔇",
+                          self.font_medium, key="toggle_sfx",
+                          primary_color=(40, 130, 90) if sfx_on else (90, 50, 50))
+
         # Lưu vị trí nút cho xử lý click
         self.btn_rects["menu_basic"] = btn_basic
         self.btn_rects["menu_challenge"] = btn_chall
         self.btn_rects["menu_mission"] = btn_miss
         self.btn_rects["menu_shop"] = btn_shop
+        self.btn_rects["toggle_music"] = btn_music
+        self.btn_rects["toggle_sfx"] = btn_sfx
 
         # ---- Điểm cao nhất ----
         if manager.high_score > 0:
@@ -1065,6 +1082,12 @@ class UIManager:
             if not rect.collidepoint(pos):
                 continue
 
+            # Âm thanh click nút chung (buy_/claim_/use_ đã có âm thanh
+            # riêng — thành công/thất bại — được phát trong manager.py)
+            if not (key.startswith("buy_") or key.startswith("claim_")
+                    or key.startswith("use_")):
+                SoundManager.play("button")  # ← THÊM
+
             # ---- Menu chính ----
             if key == "menu_basic":
                 manager.start_game(GameMode.BASIC)
@@ -1101,6 +1124,15 @@ class UIManager:
                 manager.cancel_active_tool()
                 manager.reset_to_menu()
                 return "back_menu"
+
+            # ---- Tắt/mở Nhạc nền & Hiệu ứng âm thanh ----
+            if key == "toggle_music":
+                SoundManager.toggle_music()
+                return "toggle_music"
+
+            if key == "toggle_sfx":
+                SoundManager.toggle_sfx()
+                return "toggle_sfx"
 
             # ---- Kho vật phẩm ----
             if key.startswith("use_"):

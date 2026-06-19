@@ -1,9 +1,9 @@
 {
   "version": 1,
   "created_at": 1781845079.6682544,
-  "last_saved": 1781852799.2096086,
+  "last_saved": 1781871779.6142566,
   "player": {
-    "coins": 95,
+    "coins": 105,
     "high_score": 3795,
     "total_games_played": 0,
     "total_pieces_destroyed": 0,
@@ -48,8 +48,8 @@
       "last_reset": 1781845079.6682544
     },
     "hourly_score": {
-      "progress": 500,
-      "claimed": true,
+      "progress": 235,
+      "claimed": false,
       "last_reset": 1781845079.6682544
     },
     "session_frozen": {

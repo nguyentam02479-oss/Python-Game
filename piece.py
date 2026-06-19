@@ -11,6 +11,7 @@ from settings import (
     COLOR_BLUE_ICE, COLOR_YELLOW, COLOR_WHITE,
     LERP_SPEED, GRID_OFFSET_X, GRID_OFFSET_Y
 )
+from sound_manager import SoundManager  # ← THÊM: âm thanh nổ
 
 
 class CakePiece:
@@ -130,6 +131,8 @@ class CakePiece:
         self.explode_active = True
         self.explode_timer = 0.0
         self.is_matched = True
+
+        SoundManager.play("explode")  # ← THÊM: âm thanh nổ
 
         # Tạo hiệu ứng hạt
         color = PIECE_COLORS.get(self.piece_type, (255, 200, 200))

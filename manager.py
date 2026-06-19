@@ -13,6 +13,7 @@ from settings import (
     CHALLENGE_MOVES_LIMIT, CHALLENGE_SCORE_TARGET,
     SHOP_ITEMS, MISSIONS
 )
+from sound_manager import SoundManager  # ← THÊM: âm thanh
 
 
 class GameEngine:
@@ -202,6 +203,7 @@ class GameEngine:
         """
         self.coins += amount
         if amount > 0:
+            SoundManager.play("coin")  # ← THÊM: âm thanh nhặt xu
             self._show_notification(f"+{amount} Xu!")
 
     def add_time(self, seconds: float):
@@ -248,6 +250,12 @@ class GameEngine:
         if combo > 1:
             self.session_combos += 1
 
+        # ← THÊM: âm thanh match (combo cao hơn dùng chime sáng hơn)
+        if count > 0:
+            SoundManager.play("combo" if combo > 1 else "match")
+        if frozen_broken > 0:
+            SoundManager.play("ice_break")
+
         # Cộng thời gian thưởng khi match (Basic Mode)
         if self.mode == GameMode.BASIC:
             self.add_bonus_time_for_match()
@@ -277,11 +285,13 @@ class GameEngine:
         price = item["price"]
 
         if self.coins < price:
+            SoundManager.play("invalid")  # ← THÊM
             self._show_notification("Không đủ xu!")
             return False
 
         self.coins -= price
         self.inventory[item_key] += 1
+        SoundManager.play("shop_buy")  # ← THÊM
         self._show_notification(f"Đã mua: {item['name']}!")
         return True
 
@@ -295,34 +305,41 @@ class GameEngine:
         :return: True nếu sử dụng thành công
         """
         if self.inventory.get(item_key, 0) <= 0:
+            SoundManager.play("invalid")  # ← THÊM
             self._show_notification("Không có vật phẩm này trong kho!")
             return False
 
             # Bước 2: Kiểm tra đang chơi
         if self.state != State.PLAYING:
+            SoundManager.play("invalid")  # ← THÊM
             self._show_notification("Hãy bắt đầu ván chơi trước khi dùng!")
             return False
 
             # Bước 3: Kiểm tra đúng chế độ rồi mới trừ kho
         if item_key == "extra_time":
             if self.mode != GameMode.BASIC:
+                SoundManager.play("invalid")  # ← THÊM
                 self._show_notification("+30 Giây chỉ dùng được ở Chế Độ Thời Gian!")
                 return False
             self.add_time(30.0)
             self.inventory["extra_time"] -= 1
+            SoundManager.play("button")  # ← THÊM
             self._show_notification("+30 Giây đã được cộng!")
             return True
 
         if item_key == "extra_moves":
             if self.mode != GameMode.CHALLENGE:
+                SoundManager.play("invalid")  # ← THÊM
                 self._show_notification("+5 Lượt chỉ dùng được ở Chế Độ Thử Thách!")
                 return False
             self.moves_left += 5
             self.inventory["extra_moves"] -= 1
+            SoundManager.play("button")  # ← THÊM
             self._show_notification("+5 Lượt đi!")
             return True
 
         if item_key in ("hammer", "mixer"):
+            SoundManager.play("select")  # ← THÊM: kích hoạt/hủy công cụ
             if self.active_tool == item_key:
                 self.active_tool = None
                 self._show_notification("Đã hủy công cụ.")
@@ -352,6 +369,7 @@ class GameEngine:
             return False
 
         grid.random_swap_two()
+        SoundManager.play("swap")  # ← THÊM
         self._show_notification("Đã hoán đổi 2 ô ngẫu nhiên!")
         return True
 
@@ -424,15 +442,18 @@ class GameEngine:
             if m["id"] != mission_id:
                 continue
             if m["claimed"]:
+                SoundManager.play("invalid")  # ← THÊM
                 self._show_notification("Bạn đã nhận thưởng nhiệm vụ này rồi!")
                 return False
             if m["progress"] < m["target"]:
+                SoundManager.play("invalid")  # ← THÊM
                 self._show_notification("Chưa hoàn thành nhiệm vụ!")
                 return False
 
             reward = m["reward_coin"]
             self.coins += reward  # ← cộng xu trực tiếp, không qua add_coins
             m["claimed"] = True
+            SoundManager.play("mission_complete")  # ← THÊM
             self._show_notification(  # ← chỉ 1 thông báo duy nhất
                 f"Nhận thưởng '{m['name']}': +{reward} xu!"
             )
@@ -465,6 +486,7 @@ class GameEngine:
         """
         self.state = State.GAME_OVER
         self._timer_active = False
+        SoundManager.play("lose")  # ← THÊM
         if reason:
             self._show_notification(reason, duration=3.0)
 
@@ -472,6 +494,7 @@ class GameEngine:
         """Kết thúc game (trạng thái thắng)."""
         self.state = State.LEVEL_WIN
         self._timer_active = False
+        SoundManager.play("win")  # ← THÊM
         self._show_notification("Chúc mừng! Bạn đã thắng!", duration=3.0)
 
     # =========================================================================

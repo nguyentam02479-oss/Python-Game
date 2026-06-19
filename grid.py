@@ -19,6 +19,7 @@ from piece import CakePiece
 # grid.py - SỬA DÒNG IMPORT
 
 from piece import CakePiece, PARTICLE_EFFECTS, ParticleEffect, update_particles, draw_particles, clear_particles
+from sound_manager import SoundManager  # ← THÊM: âm thanh
 # Danh sách các loại bánh ngọt thông thường (không tính WILDCARD)
 NORMAL_TYPES = [
     PieceType.CAKE1, PieceType.CAKE2, PieceType.CAKE3,
@@ -313,8 +314,10 @@ class Grid:
             has_match = len(self.check_matches()) > 0
             if not has_match:
                 self._do_swap(r1, c1, r2, c2)
+                SoundManager.play("invalid")  # ← THÊM: đổi không hợp lệ
                 return False
             else:
+                SoundManager.play("swap")  # ← THÊM: đổi thành công
                 # THÊM HIỆU ỨNG KHI SWAP THÀNH CÔNG
                 p1 = self.grid[r1][c1]
                 p2 = self.grid[r2][c2]
@@ -553,6 +556,7 @@ class Grid:
             self.selected_pos = (r, c)
             if self.grid[r][c]:
                 self.grid[r][c].is_selected = True
+                SoundManager.play("select")  # ← THÊM
         else:
             prev_r, prev_c = self.selected_pos
             # Bỏ chọn ô cũ
